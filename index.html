@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brain Gym</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: meters strip on top, barbell stage in the middle, one session card below. Single dark gym-at-night theme by design. */
+:root{
+  --floor:#141519; --panel:#1d1f25; --panel-2:#262931; --line:#33363f;
+  --chalk:#f2efe8; --dim:#a3a7b3; --steel:#7f8592; --steel-hi:#c9ccd3;
+  --feel:#ff6a3d; --real:#3ddc97; --warn:#ff5a5f;
+  --display:"Anton","Impact","Arial Narrow",sans-serif;
+  --body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--floor);color:var(--chalk);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:max(16px,env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-bottom,0px));
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 2px,transparent 2px 48px);}
+.app{max-width:580px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-family:var(--display);font-size:28px;letter-spacing:.04em;line-height:1}
+.brand span{color:var(--feel)}
+.mute{font:500 12px var(--mono);background:var(--panel);color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meter{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.meter .lbl{display:flex;justify-content:space-between;align-items:baseline;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.meter .val{font-family:var(--display);font-size:22px;color:var(--chalk);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.track{height:10px;background:var(--panel-2);border-radius:99px;overflow:hidden}
+.fill{height:100%;width:0;border-radius:99px;transition:width .7s cubic-bezier(.3,1.3,.5,1)}
+.meter.feel .fill{background:var(--feel)} .meter.real .fill{background:var(--real)}
+.stage{position:relative;height:150px;background:linear-gradient(var(--panel),var(--floor));border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.rack{position:absolute;bottom:0;width:10px;height:120px;background:var(--panel-2);border-radius:3px 3px 0 0}
+.rack.l{left:18%} .rack.r{right:18%}
+.bar{position:absolute;left:6%;right:6%;height:60px;bottom:8px;transition:bottom .8s cubic-bezier(.3,1.2,.5,1)}
+.bar.drop{transition:bottom .25s cubic-bezier(.6,0,1,1)}
+.bar.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.bar svg{width:100%;height:100%;display:block}
+.floorline{position:absolute;left:0;right:0;bottom:0;height:8px;background:repeating-linear-gradient(90deg,#24262d 0 14px,#1a1c21 14px 28px)}
+.phone{position:absolute;right:10px;top:10px;font:500 11px var(--mono);background:var(--panel-2);color:var(--chalk);border:1px solid var(--line);border-radius:99px;padding:4px 10px;opacity:0;transform:translateY(-6px);transition:.3s}
+.phone.on{opacity:1;transform:none}
+.phone i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--feel);margin-right:6px;vertical-align:1px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tag{font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--feel)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,7vw,38px);line-height:1.05;margin:0;letter-spacing:.02em;text-wrap:balance}
+.coach{display:flex;gap:12px;align-items:flex-start}
+.avatar{flex:none;width:40px;height:40px;border-radius:50%;background:var(--chalk);color:var(--floor);display:grid;place-items:center;font-family:var(--display);font-size:20px}
+.say{background:var(--panel-2);border-radius:4px 14px 14px 14px;padding:10px 14px;min-width:0}
+.say b{display:block;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+.puzzle{border:1px dashed var(--steel);border-radius:10px;padding:12px 14px;font-weight:600}
+.puzzle small{display:block;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:4px;font-weight:500}
+.steps{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.steps li{display:flex;gap:10px;opacity:0;transform:translateY(6px);transition:.4s}
+.steps li.on{opacity:1;transform:none}
+.steps li span{flex:none;font:500 12px var(--mono);color:var(--steel-hi);background:var(--panel-2);border-radius:6px;padding:2px 7px;height:fit-content}
+.btn{font:700 16px var(--body);background:var(--chalk);color:var(--floor);border:0;border-radius:10px;padding:12px 18px;cursor:pointer;align-self:flex-start}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.ghost{background:transparent;color:var(--chalk);border:1px solid var(--line)}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--feel);outline-offset:2px}
+.answer{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.rand{display:flex;align-items:center;background:var(--floor);border:1px solid var(--steel);border-radius:10px;padding-left:12px}
+.rand span{font-family:var(--display);font-size:22px;color:var(--dim)}
+.rand input{width:110px;background:transparent;border:0;color:var(--chalk);font-family:var(--display);font-size:24px;padding:8px 10px;letter-spacing:.02em}
+.rand input:focus{outline:none}
+.rand:focus-within{border-color:var(--feel)}
+.slider{display:flex;flex-direction:column;gap:6px}
+.slider input{width:100%;accent-color:var(--feel)}
+.slider .read{font-family:var(--display);font-size:44px;line-height:1;color:var(--feel)}
+.slider .ends{display:flex;justify-content:space-between;font:500 11px var(--mono);color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.result{border-radius:10px;padding:12px 14px;font-weight:500}
+.result.bad{background:rgba(255,90,95,.12);border:1px solid rgba(255,90,95,.45)}
+.result.good{background:rgba(61,220,151,.1);border:1px solid rgba(61,220,151,.45)}
+.gap{font-family:var(--display);font-size:clamp(24px,6vw,32px);line-height:1.1;letter-spacing:.02em}
+.gap em{font-style:normal;color:var(--feel)} .gap strong{font-weight:400;color:var(--warn)}
+.reps{display:flex;gap:6px}
+.reps i{flex:1;height:6px;border-radius:99px;background:var(--panel-2)}
+.reps i.done{background:var(--real)}
+.nudge{color:var(--feel);font-weight:500}
+.hint{color:var(--steel-hi);font-style:italic}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp{background:var(--panel-2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.cmp h3{margin:0;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.cmp .how{font-weight:600}
+.cmp .row{display:flex;justify-content:space-between;font-size:14px}
+.cmp .row b{font-family:var(--display);font-weight:400;font-size:18px}
+.f{color:var(--feel)} .r{color:var(--real)}
+.big{font-family:var(--display);font-size:clamp(34px,9vw,48px);line-height:1;letter-spacing:.02em}
+.small{font-size:14px;color:var(--dim)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:420px){.compare{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">BRAIN <span>GYM</span></div>
+    <button class="mute" id="mute" type="button" aria-pressed="false">Sound on</button>
+  </div>
+
+  <div class="meters" aria-live="polite">
+    <div class="meter feel"><div class="lbl">Feels strong <span class="val" id="feelVal">0</span></div><div class="track"><div class="fill" id="feelFill"></div></div></div>
+    <div class="meter real"><div class="lbl">Actually strong <span class="val" id="realVal">0</span></div><div class="track"><div class="fill" id="realFill"></div></div></div>
+  </div>
+
+  <div class="stage" aria-hidden="true">
+    <div class="rack l"></div><div class="rack r"></div>
+    <div class="bar" id="bar">
+      <svg viewBox="0 0 400 60" preserveAspectRatio="none">
+        <rect x="20" y="27" width="360" height="6" rx="3" fill="#c9ccd3"/>
+        <rect x="40" y="6" width="22" height="48" rx="4" fill="#3a3d46"/>
+        <rect x="64" y="12" width="14" height="36" rx="3" fill="#ff6a3d"/>
+        <rect x="338" y="6" width="22" height="48" rx="4" fill="#3a3d46"/>
+        <rect x="322" y="12" width="14" height="36" rx="3" fill="#ff6a3d"/>
+        <rect x="84" y="24" width="6" height="12" rx="1" fill="#7f8592"/>
+        <rect x="310" y="24" width="6" height="12" rx="1" fill="#7f8592"/>
+      </svg>
+    </div>
+    <div class="floorline"></div>
+    <div class="phone" id="phone"><i></i>3 new messages</div>
+  </div>
+
+  <main class="card" id="card"></main>
+  <div class="sr" aria-live="polite" id="sr"></div>
+</div>
+
+<script>
+(function(){
+const S={feel:0,real:0,s1Feel:0,s1Real:0,muted:false,ctx:null};
+const $=id=>document.getElementById(id);
+const card=$("card"),bar=$("bar");
+const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function setMeters(){
+  $("feelVal").textContent=Math.round(S.feel);$("realVal").textContent=Math.round(S.real);
+  $("feelFill").style.width=S.feel+"%";$("realFill").style.width=S.real+"%";
+}
+function barTo(level,fast){ // level 0..1
+  bar.classList.toggle("drop",!!fast);
+  bar.style.bottom=(8+level*72)+"px";
+}
+function shake(){bar.classList.remove("shake");void bar.offsetWidth;bar.classList.add("shake")}
+function phone(on){$("phone").classList.toggle("on",on)}
+function say(t){$("sr").textContent=t}
+
+/* sound: synthesised clang, only after a tap */
+function audio(){if(S.muted)return null;try{if(!S.ctx)S.ctx=new (window.AudioContext||window.webkitAudioContext)();if(S.ctx.state==="suspended")S.ctx.resume();return S.ctx}catch(e){return null}}
+function clang(){
+  const c=audio();if(!c)return;const t=c.currentTime;
+  [220,331,467,612].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.type="triangle";o.frequency.value=f;g.gain.setValueAtTime(.18/(i+1),t);g.gain.exponentialRampToValueAtTime(.0001,t+1.1-i*.15);o.connect(g).connect(c.destination);o.start(t);o.stop(t+1.2)});
+  const n=c.createBufferSource(),b=c.createBuffer(1,c.sampleRate*.2,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
+  const g=c.createGain();g.gain.value=.25;n.buffer=b;n.connect(g).connect(c.destination);n.start(t);
+}
+function ding(){
+  const c=audio();if(!c)return;const t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+  o.type="sine";o.frequency.setValueAtTime(660,t);o.frequency.exponentialRampToValueAtTime(990,t+.12);
+  g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.0001,t+.4);o.connect(g).connect(c.destination);o.start(t);o.stop(t+.45);
+}
+$("mute").onclick=function(){S.muted=!S.muted;this.textContent=S.muted?"Sound off":"Sound on";this.setAttribute("aria-pressed",S.muted)};
+
+function h(html){card.innerHTML=html;const f=card.querySelector("h1");if(f){f.setAttribute("tabindex","-1");f.focus({preventScroll:true})}window.scrollTo({top:0,behavior:reduce?"auto":"smooth"})}
+function coach(text){return `<div class="coach"><div class="avatar">Z</div><div class="say"><b>Coach Zaid</b>${text}</div></div>`}
+function parseRand(v){v=(v||"").replace(/r/gi,"").replace(/\s/g,"").replace(",",".");if(v==="")return NaN;return Number(v)}
+
+/* 1. Warm-up */
+function intro(){
+  S.feel=0;S.real=0;setMeters();barTo(0);phone(false);
+  h(`<div class="tag">Warm-up</div>
+  <h1>Welcome to Brain Gym</h1>
+  ${coach("Evening. Two sessions tonight, and one test day. Keep an eye on those two meters up top. One shows how strong you <em>feel</em>. The other shows how strong you <em>actually</em> are.")}
+  <button class="btn" id="go" type="button">Start session one</button>`);
+  $("go").onclick=()=>{audio();session1()};
+}
+
+/* 2. Session one: the trainer lifts */
+function session1(){
+  h(`<div class="tag">Session one · The trainer lifts</div>
+  <h1>Coach Zaid has got this</h1>
+  <div class="puzzle"><small>The lift</small>A pie and a cooldrink cost R22 together. The pie costs R20 more than the cooldrink. How much is the cooldrink?</div>
+  ${coach("Relax. I've got this one. Just watch.")}
+  <ol class="steps" id="steps">
+    <li><span>1</span><div>Most people say R2. But then the pie is R22, and together they cost R24. Too much.</div></li>
+    <li><span>2</span><div>Call the cooldrink c. The pie is c + R20. So together: c + c + 20 = 22.</div></li>
+    <li><span>3</span><div>That means 2c = 2, so c = R1. Cooldrink R1, pie R21. Easy.</div></li>
+  </ol>
+  <button class="btn" id="got" type="button" disabled>Cool, got it</button>`);
+  const items=[...card.querySelectorAll(".steps li")];
+  const feels=[35,62,85];const levels=[.35,.65,1];
+  let i=0;setTimeout(()=>phone(true),reduce?0:900);
+  function next(){
+    if(i>=items.length){$("got").disabled=false;say("The trainer finished the lift.");return}
+    items[i].classList.add("on");S.feel=feels[i];setMeters();barTo(levels[i]);i++;
+    setTimeout(next,reduce?150:1700);
+  }
+  setTimeout(next,reduce?0:700);
+  $("got").onclick=()=>{phone(false);confidence()};
+}
+
+/* 3. Confidence */
+function confidence(){
+  h(`<div class="tag">Quick check</div>
+  <h1>How strong do you feel?</h1>
+  <div class="slider">
+    <label for="conf">How much of a lift like that could you do on your own now?</label>
+    <div class="read" id="confRead">80</div>
+    <input type="range" id="conf" min="0" max="100" step="5" value="80">
+    <div class="ends"><span>Not at all</span><span>Easily</span></div>
+  </div>
+  <button class="btn" id="lock" type="button">Lock it in</button>`);
+  const r=$("conf");
+  const upd=()=>{$("confRead").textContent=r.value;S.feel=+r.value;setMeters()};
+  r.oninput=upd;upd();
+  $("lock").onclick=()=>{S.s1Feel=S.feel;testDay()};
+}
+
+/* 4. Test day */
+function testDay(){
+  barTo(0);
+  h(`<div class="tag">Test day · No trainer</div>
+  <h1>Just you and the bar</h1>
+  <p class="small">Coach Zaid is not here. Same kind of lift, different numbers.</p>
+  <div class="puzzle"><small>The lift</small>A sandwich and a juice cost R60 together. The sandwich costs R40 more than the juice. How much is the juice?</div>
+  <div class="answer">
+    <label class="rand" for="ans"><span>R</span><input id="ans" inputmode="decimal" autocomplete="off" aria-label="Your answer in rand" placeholder="?"></label>
+    <button class="btn" type="button" id="lift">Lift</button>
+  </div>`);
+  const inp=$("ans");setTimeout(()=>inp.focus(),50);
+  const go=()=>{const v=parseRand(inp.value);if(isNaN(v)){inp.focus();return}testResult(v)};
+  $("lift").onclick=go;
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();go()}};
+}
+function testResult(v){
+  let body="";
+  if(v===10){
+    S.real=25;setMeters();barTo(.6);ding();
+    body=`<div class="result good">R10. Correct. The sandwich is R50, and R50 + R10 makes R60.</div>
+    ${coach("Nice. Most people don't get that one. Watching me lift didn't do it for you though. Let's see why.")}`;
+  }else if(v===20){
+    barTo(.55);setTimeout(()=>{barTo(0,true);clang();shake()},reduce?0:500);
+    body=`<div class="result bad">R20 is the answer most people give. But then the sandwich is R60, and together they cost R80.</div>
+    <div class="gap">You felt <em>${S.s1Feel}</em>. You lifted <strong>0</strong>.</div>
+    <p class="small">The answer is R10. In session two you will see how to get there yourself.</p>`;
+  }else{
+    barTo(.4);setTimeout(()=>{barTo(0,true);clang();shake()},reduce?0:500);
+    body=`<div class="result bad">R${v} does not work. The juice is R10, and the sandwich is R50.</div>
+    <div class="gap">You felt <em>${S.s1Feel}</em>. You lifted <strong>0</strong>.</div>
+    <p class="small">In session two you will see how to get there yourself.</p>`;
+  }
+  S.s1Real=S.real;
+  h(`<div class="tag">Test day · Result</div><h1>${v===10?"You lifted it":"The bar came down"}</h1>${body}
+  <button class="btn" id="s2" type="button">Start session two</button>`);
+  say(v===10?"Correct.":"Incorrect. The bar dropped.");
+  $("s2").onclick=session2;
+}
+
+/* 5. Session two: the trainer spots */
+const REPS=[
+  {q:"First, take the extra away. If you remove the R18 extra from the R30 total, how much is left?",a:12,
+   hint:"Start with the total. Take away only the extra amount.",
+   nudge:"Not quite. Check the subtraction: R30 take away R18."},
+  {q:"What is left is two equal prices, one for each item. How much is one of them?",a:6,
+   hint:"Two items, the same price, adding up to what you had left.",
+   nudge:"Close. Split R12 into two equal parts."},
+  {q:"Check your form. Vetkoek R6. Fare R6 + R18 = R24. Does R6 + R24 make R30?",yesno:true,
+   hint:"Just add the two prices together.",
+   nudge:"Add them again: 6 + 24."}
+];
+let rep=0,startReal=0;
+function session2(){
+  rep=0;startReal=S.real;S.feel=S.real;setMeters();barTo(0);
+  renderRep();
+}
+function renderRep(msg){
+  const R=REPS[rep];
+  const dots=REPS.map((_,i)=>`<i class="${i<rep?"done":""}"></i>`).join("");
+  h(`<div class="tag">Session two · The trainer spots</div>
+  <h1>This time, you lift</h1>
+  <div class="puzzle"><small>The lift</small>A taxi fare and a vetkoek cost R30 together. The fare costs R18 more than the vetkoek. How much is the vetkoek?</div>
+  <div class="reps" aria-label="Rep ${rep+1} of 3">${dots}</div>
+  ${coach((rep===0?"I'm right here. I won't touch the bar unless you need me. ":"")+R.q)}
+  ${R.yesno?`<div class="btns"><button class="btn" id="yes" type="button">Yes</button><button class="btn ghost" id="no" type="button">No</button></div>`:
+  `<div class="answer"><label class="rand" for="ans"><span>R</span><input id="ans" inputmode="decimal" autocomplete="off" aria-label="Your answer in rand" placeholder="?"></label><button class="btn" type="button" id="lift">Lift</button></div>`}
+  <div id="fb">${msg||""}</div>
+  <button class="btn ghost" id="spot" type="button">Spot me</button>`);
+  $("spot").onclick=()=>{$("fb").innerHTML=`<p class="hint">${R.hint}</p>`;say(R.hint)};
+  if(R.yesno){
+    $("yes").onclick=()=>repDone();
+    $("no").onclick=()=>{shake();$("fb").innerHTML=`<p class="nudge">${R.nudge}</p>`;say(R.nudge)};
+  }else{
+    const inp=$("ans");setTimeout(()=>inp.focus(),50);
+    const go=()=>{const v=parseRand(inp.value);if(isNaN(v)){inp.focus();return}
+      if(v===R.a)repDone();else{shake();$("fb").innerHTML=`<p class="nudge">${R.nudge}</p>`;say(R.nudge);inp.select()}};
+    $("lift").onclick=go;
+    inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();go()}};
+  }
+}
+function repDone(){
+  const gain=(100-startReal)/REPS.length;
+  rep++;S.real=Math.min(100,startReal+gain*rep);S.feel=S.real;setMeters();barTo(rep/REPS.length);ding();
+  if(rep<REPS.length){renderRep(`<p class="result good">Rep ${rep} done.</p>`)}else{setTimeout(rack,reduce?0:500)}
+}
+
+/* 6. Rack it */
+function rack(){
+  barTo(1);
+  h(`<div class="tag">Rack it</div>
+  <div class="big">Same trainer.<br>Different ask.</div>
+  ${coach("That was all you. I just stood there.")}
+  <div class="compare">
+    <div class="cmp"><h3>Session one</h3><div class="how">The trainer lifted for you</div>
+      <div class="row"><span>Feels strong</span><b class="f">${S.s1Feel}</b></div>
+      <div class="row"><span>Actually strong</span><b class="r">${Math.round(S.s1Real)}</b></div></div>
+    <div class="cmp"><h3>Session two</h3><div class="how">The trainer spotted you</div>
+      <div class="row"><span>Feels strong</span><b class="f">${Math.round(S.feel)}</b></div>
+      <div class="row"><span>Actually strong</span><b class="r">${Math.round(S.real)}</b></div></div>
+  </div>
+  <p>In session one you felt strong and stayed weak. In session two the meters matched, because you did the lifting.</p>
+  <p class="small">Continue to the next slide.</p>
+  <button class="btn ghost" id="again" type="button">Train again</button>`);
+  $("again").onclick=intro;
+}
+
+intro();
+})();
+</script>
+</body>
+</html>
